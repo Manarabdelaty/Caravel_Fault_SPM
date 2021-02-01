@@ -15,19 +15,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 FIRMWARE_PATH = ../..
-RTL_PATH = ../../../../rtl
+VERILOG_PATH = ../../../..
+RTL_PATH = $(VERILOG_PATH)/rtl
 IP_PATH = ../../../../ip
 BEHAVIOURAL_MODELS = ../../ 
 
 GCC_PATH?=/ef/apps/bin
 GCC_PREFIX?=riscv32-unknown-elf
-PDK_PATH?=/ef/tech/SW/sky130A
+PDK_PATH?=$(PDK_ROOT)/sky130A
 
 SIM?=RTL
 
 .SUFFIXES:
 
-PATTERN = la_test2
+PATTERN = spm
 
 all:  ${PATTERN:=.vcd}
 
@@ -36,7 +37,7 @@ hex:  ${PATTERN:=.hex}
 %.vvp: %_tb.v %.hex
 ifeq ($(SIM),RTL)
 	iverilog -DFUNCTIONAL -DSIM -I $(BEHAVIOURAL_MODELS) \
-	-I $(PDK_PATH) -I $(IP_PATH) -I $(RTL_PATH) \
+	-I $(PDK_PATH) -I $(IP_PATH) -I $(VERILOG_PATH) -I $(RTL_PATH) \
 	$< -o $@
 else
 	iverilog -DFUNCTIONAL -DSIM -DGL -I $(BEHAVIOURAL_MODELS) \

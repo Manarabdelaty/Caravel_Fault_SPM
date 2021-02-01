@@ -17,22 +17,30 @@
 
 `timescale 1 ns / 1 ps
 
+`include "gl/user_project/gl/spm_top.v"
 `include "caravel.v"
 `include "spiflash.v"
-`include "tbuart.v"
 
-module la_test1_tb;
+module spm_tb;
 	reg clock;
     	reg RSTB;
 	reg power1, power2;
+	reg power3, power4;
 
-    	wire gpio;
-	wire uart_tx;
-    	wire [37:0] mprj_io;
-	wire [15:0] checkbits;
+	wire gpio;
+	wire [37:0] mprj_io;
+	wire [16:0] mprj_io_h;
 
-	assign checkbits  = mprj_io[31:16];
-	assign uart_tx = mprj_io[6];
+	assign mprj_io_h = mprj_io[31:16];
+	
+	assign mprj_io[0] = 1'b0;
+	assign mprj_io[1] = 1'b1;
+	assign mprj_io[2] = 1'b0;
+	assign mprj_io[3] = 1'b0;
+
+	// External clock is used by default.  Make this artificially fast for the
+	// simulation.  Normally this would be a slow clock and the digital PLL
+	// would be the fast clock.
 
 	always #12.5 clock <= (clock === 1'b0);
 
@@ -41,57 +49,62 @@ module la_test1_tb;
 	end
 
 	initial begin
-		$dumpfile("la_test1.vcd");
-		$dumpvars(0, la_test1_tb);
+		$dumpfile("spm.vcd");
+		$dumpvars(0, spm_tb);
 
 		// Repeat cycles of 1000 clock edges as needed to complete testbench
-		repeat (200) begin
+		repeat (25) begin
 			repeat (1000) @(posedge clock);
 			// $display("+1000 cycles");
 		end
 		$display("%c[1;31m",27);
-		$display ("Monitor: Timeout, Test Mega-Project IO (RTL) Failed");
+		$display ("Monitor: Timeout, Test Mega-Project IO Ports (RTL) Failed");
 		$display("%c[0m",27);
 		$finish;
 	end
 
 	initial begin
-		wait(checkbits == 16'hAB40);
-		$display("LA Test 1 started");
-		wait(checkbits == 16'hAB41);
-		wait(checkbits == 16'hAB51);
-		#10000;
-		$finish;
+	    // Observe Output pins [7:0]
+	    wait(mprj_io_h == 16'hAB40);
+	    $display("Monitor: Test 1 Mega-Project IO (RTL) Passed");
+	    $finish;
 	end
 
 	initial begin
 		RSTB <= 1'b0;
-		#1000;
-		RSTB <= 1'b1;	    // Release reset
 		#2000;
+		RSTB <= 1'b1;	    // Release reset
 	end
 
 	initial begin		// Power-up sequence
 		power1 <= 1'b0;
 		power2 <= 1'b0;
+		power3 <= 1'b0;
+		power4 <= 1'b0;
 		#200;
 		power1 <= 1'b1;
 		#200;
 		power2 <= 1'b1;
+		#200;
+		power3 <= 1'b1;
+		#200;
+		power4 <= 1'b1;
 	end
 
-    	wire flash_csb;
+	always @(mprj_io) begin
+		#1 $display("MPRJ-IO state = %b ", mprj_io[31:16]);
+	end
+
+	wire flash_csb;
 	wire flash_clk;
 	wire flash_io0;
 	wire flash_io1;
 
-	wire VDD1V8;
-    	wire VDD3V3;
-	wire VSS;
-    
-	assign VDD3V3 = power1;
-	assign VDD1V8 = power2;
-	assign VSS = 1'b0;
+	wire VDD3V3 = power1;
+	wire VDD1V8 = power2;
+	wire USER_VDD3V3 = power3;
+	wire USER_VDD1V8 = power4;
+	wire VSS = 1'b0;
 
 	caravel uut (
 		.vddio	  (VDD3V3),
@@ -100,12 +113,12 @@ module la_test1_tb;
 		.vssa	  (VSS),
 		.vccd	  (VDD1V8),
 		.vssd	  (VSS),
-		.vdda1    (VDD3V3),
-		.vdda2    (VDD3V3),
+		.vdda1    (USER_VDD3V3),
+		.vdda2    (USER_VDD3V3),
 		.vssa1	  (VSS),
 		.vssa2	  (VSS),
-		.vccd1	  (VDD1V8),
-		.vccd2	  (VDD1V8),
+		.vccd1	  (USER_VDD1V8),
+		.vccd2	  (USER_VDD1V8),
 		.vssd1	  (VSS),
 		.vssd2	  (VSS),
 		.clock	  (clock),
@@ -119,7 +132,7 @@ module la_test1_tb;
 	);
 
 	spiflash #(
-		.FILENAME("la_test1.hex")
+		.FILENAME("spm.hex")
 	) spiflash (
 		.csb(flash_csb),
 		.clk(flash_clk),
@@ -127,11 +140,6 @@ module la_test1_tb;
 		.io1(flash_io1),
 		.io2(),			// not used
 		.io3()			// not used
-	);
-
-	// Testbench UART
-	tbuart tbuart (
-		.ser_rx(uart_tx)
 	);
 
 endmodule

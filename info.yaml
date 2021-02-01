@@ -2,12 +2,12 @@
 project: 
   description: "A template SoC for Google sponsored Open MPW shuttles for SKY130."
   foundry: "SkyWater"
-  git_url: "https://github.com/efabless/caravel.git"
+  git_url: "https://github.com/Manarabdelaty/Caravel_Fault_SPM"
   organization: "Efabless"
   organization_url: "http://efabless.com"
-  owner: "Tim Edwards"
+  owner: "Efabless"
   process: "SKY130"
-  project_name: "Caravel"
+  project_name: "Caravel_Fault_SPM"
   tags: 
     - "Open MPW"
     - "Test Harness"

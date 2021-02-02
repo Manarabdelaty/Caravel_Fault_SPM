@@ -69,12 +69,12 @@ void main()
 	reg_mprj_xfer = 1;
 	while (reg_mprj_xfer == 1);
 
-	// Configure LA probes [31:0], [63:32],[64] as inputs to the cpu 
-	// Configure LA probe [65], [127:96] as output from the cpu
+	// Configure LA probes [31:0], [63:32],[64], [65] as inputs to the cpu 
+	// Configure LA probe [127:96] as output from the cpu
 	reg_la0_ena = 0xFFFFFFFF;    // [31:0]
 	reg_la1_ena = 0xFFFFFFFF;    // [63:32]
-	reg_la2_ena = 0x00000001;    // [95:64]
-	reg_la3_ena = 0x00000000;    // [127:96]
+	reg_la2_ena = 0x00000007;    // [95:64]
+	reg_la3_ena = 0xFFFFFFFF;    // [127:96]
 
 	// Write mc & mp 
 	reg_la0_data = 4;  // mc
@@ -83,22 +83,59 @@ void main()
 	// Start Multiplication
 	reg_la2_data = 1;
 
-	// Configure LA[0] as output
-	reg_la0_ena = 0x00000000;
-
 	// Wait on done signal
-	while((reg_la0_data & 0x00000001) != 1);
-
-	// Configure [64] as output
-	reg_la2_ena = 0x00000001;
-
-	// read multiplication value
-	int long prod =  ((reg_la3_data << 32) | reg_la2_data); 
+	while(((reg_la2_data >> 2) & 0x00000001) != 1);
 	
-	if (prod != 25) {
+	reg_mprj_datal = 0xAB300000;  // flag multiplication done
+
+	if (reg_la3_data != 24) {
 		reg_mprj_datal = 0xAB410000;
 	} else {
 		reg_mprj_datal = 0xAB400000;
 	}
+
+	reg_la2_data = 0;
+
+	// Write mc & mp 
+	reg_la0_data = 153;  // mc
+	reg_la1_data = 99;  // mp
+
+	// Start Multiplication
+	reg_la2_data = 1;
+
+	// Wait on done signal
+	while(((reg_la2_data >> 2) & 0x00000001) != 1);
+
+	reg_mprj_datal = 0xAB300000; // flag multiplication done
+
+	if (reg_la3_data != 15147) {
+		reg_mprj_datal = 0xAB510000;
+	} else {
+		reg_mprj_datal = 0xAB500000;
+	}
+
+	reg_la2_data = 0;
+
+
+	// Write mc & mp 
+	reg_la0_data = -183;  // mc
+	reg_la1_data = -83;  // mp
+
+	// Start Multiplication
+	reg_la2_data = 1;
+
+	// Wait on done signal
+	while(((reg_la2_data >> 2) & 0x00000001) != 1);
+
+	reg_mprj_datal = 0xAB300000; // flag multiplication done
+
+	if (reg_la3_data != 15189) {
+		reg_mprj_datal = 0xAB610000;
+	} else {
+		reg_mprj_datal = 0xAB600000;
+	}
+
+	reg_la2_data = 0;
+
 }
 

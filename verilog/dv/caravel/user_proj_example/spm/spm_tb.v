@@ -17,7 +17,7 @@
 
 `timescale 1 ns / 1 ps
 
-`include "gl/user_project/gl/spm_top.v"
+`include "gl/user_project/gl/user_proj_top.v"
 `include "caravel.v"
 `include "spiflash.v"
 
@@ -53,7 +53,7 @@ module spm_tb;
 		$dumpvars(0, spm_tb);
 
 		// Repeat cycles of 1000 clock edges as needed to complete testbench
-		repeat (25) begin
+		repeat (40) begin
 			repeat (1000) @(posedge clock);
 			// $display("+1000 cycles");
 		end
@@ -64,9 +64,16 @@ module spm_tb;
 	end
 
 	initial begin
-	    // Observe Output pins [7:0]
+		wait(mprj_io_h == 16'hAB30);
+		$display("Multiplication is done !");
 	    wait(mprj_io_h == 16'hAB40);
-	    $display("Monitor: Test 1 Mega-Project IO (RTL) Passed");
+		wait(mprj_io_h == 16'hAB30);
+		$display("Multiplication is done !");
+		wait(mprj_io_h == 16'hAB50);
+		wait(mprj_io_h == 16'hAB30);
+		$display("Multiplication is done !");
+		wait(mprj_io_h == 16'hAB60);
+	    $display("Monitor: Test 1 SPM Functional Test (RTL) Passed");
 	    $finish;
 	end
 

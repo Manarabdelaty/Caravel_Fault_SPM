@@ -19,7 +19,7 @@
 .SUFFIXES:
 .SILENT: clean all
 
-PATTERNS = spm
+PATTERNS = spm chain
 
 all:  ${PATTERNS}
 	for i in ${PATTERNS}; do \

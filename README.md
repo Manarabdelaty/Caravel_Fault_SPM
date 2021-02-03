@@ -4,7 +4,26 @@ The repo contains SPM with DFT structure integratin with the Caravel chip. For t
 
 # Caravel Integration
 
-## Verilog View
+### Verilog View
+
+The SPM utilizes the caravel IO ports and logic analyzer probes. Refer to [user_project_wrapper.v](verilog/rtl/user_project_wrapper.v)
+
+| Caravel-IO    | SPM           |  Mode
+| ------------- | ------------- | -------------
+|  io[0]        | tck           | Input
+|  io[1]        | tms           | Input
+|  io[2]        | tdi           | Input
+|  io[4]        | tdo           | Output
+|  io[5]        | trst          | Input
+
+| Caravel-LA        | SPM            |  Mode
+| ----------------- | ---------------| -------------
+|  la_data[31:0]    | multiplicant   | Input
+|  la_data[63:32]   | multiplier     | Input
+|  la_data[64]      | start          | Input
+|  la_data[65]      | product_select | Output
+|  la_data[66]      | done           | Input
+|  la_data[127:96]  | product        | Input
 
 ### GDS View
 

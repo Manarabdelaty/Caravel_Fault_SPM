@@ -18,7 +18,7 @@
 `timescale 1 ns / 1 ps
 
 `ifdef GL
-    `include "gl/user_project/gl/user_proj_top.v"
+	`include "gl/user_project/gl/user_proj_top.v"
     `include "gl/user_project/gl/user_project_wrapper.v"
 `else
     `define USE_POWER_PINS
@@ -31,7 +31,7 @@
 
 `define SOC_SETUP_TIME 170_000
 
-module chain_tb;
+module tv_tb;
 	reg clock;
     reg RSTB;
     reg CSB;
@@ -60,23 +60,25 @@ module chain_tb;
 	// simulation.  Normally this would be a slow clock and the digital PLL
 	// would be the fast clock.
 
-	always #10 clock <= (clock === 1'b0);
-	always #10 tck <= (tck === 1'b0);
+	always #12.5 clock <= (clock === 1'b0);
+	always #20 tck <= (tck === 1'b0);
 
-    wire[470:0] serializable =
-        471'b000000010101111101000011111101110100110110111111101111010100010101010011010101110111000110011110110100001110100011001110001010000001110110111011000101110101101001101111000110110000110011011010000100010000011000011111111000000100011000110111001001010100101001110000110111001000000010111100011100101100000111100100011100001001101000011010000000001011011001010101011011010011010100110111111011001010101000110011111011110011000111110111000110011001001001010010100101101000001;
-    reg[470:0] serial;
+    integer i, error;
+
+    reg [404:0] scanInSerial;
+    reg [267:0] vectors [0:19];
+    reg [404:0] gmOutput[0:19];
 
     wire[7:0] tmsPattern = 8'b 01100110;
-    wire[3:0] preload_chain = 4'b0011;
+    wire[3:0] preloadChain = 4'b 0011;
 
 	initial begin
 		clock = 0;
 	end
 
 	initial begin
-		$dumpfile("chain.vcd");
-		$dumpvars(0, chain_tb);
+		$dumpfile("tv.vcd");
+		$dumpvars(0, tv_tb);
 
 		// Repeat cycles of 1000 clock edges as needed to complete testbench
 		repeat (60) begin
@@ -89,8 +91,6 @@ module chain_tb;
 		$finish;
 	end
 
-    integer i;
-
 	initial begin
         tms = 0 ;
         tck = 0 ;
@@ -99,46 +99,100 @@ module chain_tb;
         RSTB <= 1'b0;
         CSB <= 1'b1;
         tms = 1;
+        $readmemb("user_proj_top.bin.vec.mem", vectors);
+        $readmemb("user_proj_top.bin.out.mem", gmOutput);
         #2000;
 		RSTB <= 1'b1;	    // Release reset    
         #(`SOC_SETUP_TIME); 
     	CSB = 1'b0;		// CSB can be released
-        #20;
-        trst = 1;   
-        #20;
-
-         /*
-            Test PreloadChain Instruction
-        */
-        shiftIR(preload_chain);
-        enterShiftDR();
-
-        for (i = 0; i < 471; i = i + 1) begin
-            tdi = serializable[i];
-            #20;
-        end
-        for(i = 0; i< 471; i = i + 1) begin
-            serial[i] = tdo;
-            #20;
-        end 
-
-        if(serial !== serializable) begin
-            $error("EXECUTING_PRELOAD_CHAIN_INST_FAILED");
-            $finish;
-        end
-        exitDR();
+        #40;
+        trst = 1;        
+        #40;
+        test(vectors[0], gmOutput[0]) ;
+        test(vectors[1], gmOutput[1]) ;
+        test(vectors[2], gmOutput[2]) ;
+        test(vectors[3], gmOutput[3]) ;
+        test(vectors[4], gmOutput[4]) ;
+        test(vectors[5], gmOutput[5]) ;
+        test(vectors[6], gmOutput[6]) ;
+        test(vectors[7], gmOutput[7]) ;
+        test(vectors[8], gmOutput[8]) ;
+        test(vectors[9], gmOutput[9]) ;
+        test(vectors[10], gmOutput[10]) ;
+        test(vectors[11], gmOutput[11]) ;
+        test(vectors[12], gmOutput[12]) ;
+        test(vectors[13], gmOutput[13]) ;
+        test(vectors[14], gmOutput[14]) ;
+        test(vectors[15], gmOutput[15]) ;
+        test(vectors[16], gmOutput[16]) ;
+        test(vectors[17], gmOutput[17]) ;
+        test(vectors[18], gmOutput[18]) ;
+        test(vectors[19], gmOutput[19]) ;
 
         $display("SUCCESS_STRING");
         $finish;
     end
 
-    task shiftIR;
+    task test;
+        input [267:0] vector;
+        input [404:0] goldenOutput;
+        begin
+           
+            // Preload Scan-Chain with TV
+
+            shiftIR(preloadChain);
+            enterShiftDR();
+
+            for (i = 0; i < 268; i = i + 1) begin
+                tdi = vector[i];
+                if (i == 265) begin
+                    tms = 1; // Exit-DR
+                end
+                if (i == 266) begin
+                    tms = 0; // Pause-DR
+                end
+                if (i == 267) begin
+                    tms = 1; // Exit2-DR
+                end
+                #40;
+            end
+
+            tms = 0; // Shift-DR
+            #40;
+            // Shift-out response
+            error = 0;
+            for (i = 0; i< 405;i = i + 1) begin
+                tdi = 0;
+                scanInSerial[i] = tdo;
+                if (scanInSerial[i] !== goldenOutput[i]) begin
+                    $display("Error simulating output response at bit number %0d                        Expected %0b, Got %0b", i, goldenOutput[i], scanInSerial[i]);
+                    error = error + 1;
+                end
+                if(i == 404) begin
+                    tms = 1; // Exit-DR
+                end
+                #40;
+            end
+            tms = 1; // update-DR
+            #40;
+            tms = 0; // run-test-idle
+            #40;
+
+            if(scanInSerial !== goldenOutput) begin
+                $display("Simulating TV failed, number fo errors %0d : ", error);
+                $error("SIMULATING_TV_FAILED");
+                // $finish;
+            end
+        end
+    endtask
+
+       task shiftIR;
         input[3:0] instruction;
         integer i;
         begin
             for (i = 0; i< 5; i = i + 1) begin
                 tms = tmsPattern[i];
-                #20;
+                #40;
             end
 
             // At shift-IR: shift new instruction on tdi line
@@ -147,31 +201,31 @@ module chain_tb;
                 if(i == 3) begin
                     tms = tmsPattern[5];     // exit-ir
                 end
-                #20;
+                #40;
             end
 
             tms = tmsPattern[6];     // update-ir 
-            #20;
+            #40;
             tms = tmsPattern[7];     // run test-idle
-            #60;
+            #120;
         end
     endtask
 
     task enterShiftDR;
         begin
             tms = 1;     // select DR
-            #20;
-            tms = 0;     // capture DR -- shift DR
             #40;
+            tms = 0;     // capture DR -- shift DR
+            #80;
         end
     endtask
 
     task exitDR;
         begin
             tms = 1;     // Exit DR -- update DR
-            #40;
+            #80;
             tms = 0;     // Run test-idle
-            #20;
+            #40;
         end
     endtask
 
@@ -227,7 +281,7 @@ module chain_tb;
 	);
 
 	spiflash #(
-		.FILENAME("chain.hex")
+		.FILENAME("tv.hex")
 	) spiflash (
 		.csb(flash_csb),
 		.clk(flash_clk),

@@ -17,13 +17,22 @@
 
 `timescale 1 ns / 1 ps
 
-`include "gl/user_project/gl/user_proj_top.v"
+`ifdef GL
+	`include "gl/user_project/gl/user_proj_top.v"
+    `include "gl/user_project/gl/user_project_wrapper.v"
+`else
+ 	`define USE_POWER_PINS
+    `include "gl/user_project/gl/user_proj_top.v"
+    `include "user_project_wrapper.v"
+`endif
+
 `include "caravel.v"
 `include "spiflash.v"
 
 module spm_tb;
 	reg clock;
-    	reg RSTB;
+    reg RSTB;
+	reg CSB;
 	reg power1, power2;
 	reg power3, power4;
 
@@ -36,7 +45,8 @@ module spm_tb;
 	assign mprj_io[0] = 1'b0;
 	assign mprj_io[1] = 1'b1;
 	assign mprj_io[2] = 1'b0;
-	assign mprj_io[3] = 1'b0;
+    assign mprj_io[3] = (CSB == 1'b1) ? 1'b1 : 1'bz;
+	assign mprj_io[5] = 1'b0;
 
 	// External clock is used by default.  Make this artificially fast for the
 	// simulation.  Normally this would be a slow clock and the digital PLL
@@ -79,8 +89,11 @@ module spm_tb;
 
 	initial begin
 		RSTB <= 1'b0;
+	    CSB <= 1'b1;
 		#2000;
-		RSTB <= 1'b1;	    // Release reset
+		RSTB <= 1'b1;	 // Release reset
+		#170000;
+		CSB = 1'b0;		// CSB can be released
 	end
 
 	initial begin		// Power-up sequence
@@ -88,13 +101,13 @@ module spm_tb;
 		power2 <= 1'b0;
 		power3 <= 1'b0;
 		power4 <= 1'b0;
-		#200;
+		#100;
 		power1 <= 1'b1;
-		#200;
+		#100;
 		power2 <= 1'b1;
-		#200;
+		#100;
 		power3 <= 1'b1;
-		#200;
+		#100;
 		power4 <= 1'b1;
 	end
 
@@ -130,7 +143,7 @@ module spm_tb;
 		.vssd2	  (VSS),
 		.clock	  (clock),
 		.gpio     (gpio),
-        	.mprj_io  (mprj_io),
+        .mprj_io  (mprj_io),
 		.flash_csb(flash_csb),
 		.flash_clk(flash_clk),
 		.flash_io0(flash_io0),

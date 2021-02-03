@@ -43,7 +43,7 @@ void main()
 	/* that external pin changes don't affect it.			*/
 
 	reg_spimaster_config = 0xa002;	// Enable, prescaler = 2,
-                                        // connect to housekeeping SPI
+                                    // connect to housekeeping SPI
 
 	// Configure JTAG ports
 	reg_mprj_io_0 =  GPIO_MODE_USER_STD_INPUT_NOPULL; 	// tck

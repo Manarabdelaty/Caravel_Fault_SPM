@@ -41,11 +41,17 @@ void main()
 
 	*/
 
+	/* Set up the housekeeping SPI to be connected internally so	*/
+	/* that external pin changes don't affect it.			*/
+
+	reg_spimaster_config = 0xa002;	// Enable, prescaler = 2,
+                                        // connect to housekeeping SPI
+
 	// Configure JTAG ports
 	reg_mprj_io_0 =  GPIO_MODE_USER_STD_INPUT_NOPULL; 	// tck
 	reg_mprj_io_1 =  GPIO_MODE_USER_STD_INPUT_NOPULL;   // tms
 	reg_mprj_io_2 =  GPIO_MODE_USER_STD_INPUT_NOPULL; 	// tdi
-	reg_mprj_io_3 =  GPIO_MODE_USER_STD_INPUT_NOPULL; 	// trst
+	reg_mprj_io_5 =  GPIO_MODE_USER_STD_INPUT_NOPULL; 	// trst
 	reg_mprj_io_4 =  GPIO_MODE_USER_STD_BIDIRECTIONAL;  // tdo
 	
 	reg_mprj_io_31 = GPIO_MODE_MGMT_STD_OUTPUT;

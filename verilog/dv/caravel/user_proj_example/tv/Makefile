@@ -28,7 +28,7 @@ SIM?=RTL
 
 .SUFFIXES:
 
-PATTERN = chain
+PATTERN = tv
 
 all:  ${PATTERN:=.vcd}
 
